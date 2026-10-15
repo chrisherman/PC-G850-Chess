@@ -1,3 +1,23 @@
+# PC-G850V Chess
+If you are just here for the chess program, go to the source folder, dowwnload the .ihx  and transfer it to the pocket calculator:
+Launch the monitor:
+```bash
+MON
+R
+```
+then use mame's file maner to associate the SER interface with the .ihx file and the computer should start loading the program into memory.
+Once loaded, issue the command to execute the code:
+```bash
+G0100
+```
+
+
+
+
+
+
+
+
 # PC-G850V Dev Environment: Over-Engineering a 40-Year-Old Calculator
 
 Welcome to your modern CI/CD pipeline for a Z80 pocket computer. Because why just compile code when you can ship it across a network to a containerized microservice, build it, ship it back, and launch a virtualized emulator, all to see a text prompt on a 144x32 pixel screen? 
