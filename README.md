@@ -12,7 +12,7 @@ G0100
 ```
 
 
-![Chess on the PC-G850](./images/screenshot01.png)
+![Chess on the PC-G850](./images/screenshot01_a.png)
 
 
 
