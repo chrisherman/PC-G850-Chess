@@ -10,8 +10,8 @@
 #define MAX_MOVES 85
 
 /* 
- * 100-LINE BINARY OPENING BOOK (10 Plies / 5 Full Turns)
- * 100 lines * 20 bytes = 2,000 bytes (2 KB) of ROM
+- 100-LINE BINARY OPENING BOOK (10 Plies / 5 Full Turns)
+- 100 lines * 20 bytes = 2,000 bytes (2 KB) of ROM
  */
 #define BOOK_LINES 100
 #define BOOK_DEPTH 10
@@ -196,6 +196,7 @@ struct GameState_t {
     int top_scores[5];
     int top_count;
     char engine_last_move[8];
+    int user_color; /* 1 = White, -1 = Black */
 } g = {
     {
         OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF,
@@ -211,7 +212,7 @@ struct GameState_t {
         OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF,
         OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF
     },
-    0, 0, 0, 0, 0, { {""} }, { 0 }, { 0 }, -1, 0, 0, 0, 0, 0, 0, 0, { {""} }, { 0 }, 0, ""
+    0, 0, 0, 0, 0, { {""} }, { 0 }, { 0 }, -1, 0, 0, 0, 0, 0, 0, 0, { {""} }, { 0 }, 0, "", 1
 };
 
 #define board g.board
@@ -235,6 +236,7 @@ struct GameState_t {
 #define top_scores g.top_scores
 #define top_count g.top_count
 #define engine_last_move g.engine_last_move
+#define user_color g.user_color
 
 unsigned char move_from[(MAX_DEPTH + 1) * MAX_MOVES];
 unsigned char move_to[(MAX_DEPTH + 1) * MAX_MOVES];
@@ -785,6 +787,7 @@ int find_best_move(int color, unsigned char *best_from, unsigned char *best_to) 
 void render_dashboard(void) {
     int i, idx, d_score;
     int n;
+    int current_turn = (history_count % 2 == 0) ? 1 : -1;
     
     for (i = 0; i < 7; i++) {
         goto_xy(i + 1, 1);
@@ -824,7 +827,10 @@ void render_dashboard(void) {
         }
         else if (i == 1) printf("D:%-1d   ", current_depth);
         else if (i == 2) printf("Turn: ");
-        else if (i == 3) printf("YOU   ");
+        else if (i == 3) {
+            if (current_turn == user_color) printf("YOU   ");
+            else printf("ENG   ");
+        }
         else if (i == 4) {
             if (engine_book_line >= 0) printf("Bk:%-3d", engine_book_line + 1);
             else printf("       ");
@@ -833,16 +839,55 @@ void render_dashboard(void) {
     }
 }
 
+void trigger_engine_move(void) {
+    int engine_color = -user_color;
+    unsigned char b_from, b_to;
+    int moving_piece, captured_piece, promoted, prev_ep = en_passant_sq;
+    int is_chk, is_mat;
+    char san_str[15];
+
+    goto_xy(4, 23); printf("ENG   ");
+    clear_row(8);
+    goto_xy(8, 1);
+    printf("Engine thinking...    ");
+
+    find_best_move(engine_color, &b_from, &b_to);
+    
+    moving_piece = board[b_from];
+    captured_piece = board[b_to];
+    
+    make_move_full(b_from, b_to, &captured_piece, &en_passant_sq, &promoted);
+    
+    is_chk = is_square_attacked(find_king(user_color), engine_color);
+    is_mat = (is_chk && !has_legal_moves(user_color));
+    format_san(b_from, b_to, moving_piece, captured_piece, is_chk, is_mat, san_str);
+    strcpy(engine_last_move, san_str);
+
+    if (moving_piece == -6) { b_king_moved = 1; }
+    if (b_from == 91) { b_rook_a_moved = 1; }
+    if (b_from == 98) { b_rook_h_moved = 1; }
+
+    if (history_count < 50) {
+        history_from[history_count] = b_from;
+        history_to[history_count] = b_to;
+        strcpy(move_history[history_count++], san_str);
+        if (history_count > 7) scroll_offset = history_count - 7;
+    }
+
+    clear_row(8);
+    render_dashboard();
+}
+
 void get_user_move(void) {
     char input[15], clean_input[15], coord_buf[15], san_buf[15];
     int pos = 0, j;
     int c, from, to;
-    unsigned char b_from, b_to;
     char san_str[15];
     int moving_piece, captured_piece, promoted, prev_ep = en_passant_sq;
     int is_chk, is_mat;
     long d;
     int i, move_idx = -1;
+    int engine_color = -user_color;
 
     clear_row(8);
     goto_xy(8, 1);
@@ -875,7 +920,7 @@ void get_user_move(void) {
     }
     clean_input[j] = '\0';
 
-    generate_moves(1, 0);
+    generate_moves(user_color, 0);
     for (i = 0; i < move_counts[0]; i++) {
         sq_to_str(move_from[i], coord_buf);
         sq_to_str(move_to[i], coord_buf + 2);
@@ -900,7 +945,7 @@ void get_user_move(void) {
         
         make_move_full(from, to, &captured_piece, &en_passant_sq, &promoted);
         
-        if (is_square_attacked(find_king(1), -1)) {
+        if (is_square_attacked(find_king(user_color), engine_color)) {
             unmake_move_full(from, to, captured_piece, prev_ep, promoted);
             goto_xy(8, 1);
             printf("In Check!             ");
@@ -909,8 +954,8 @@ void get_user_move(void) {
             return;
         }
 
-        is_chk = is_square_attacked(find_king(-1), 1);
-        is_mat = (is_chk && !has_legal_moves(-1));
+        is_chk = is_square_attacked(find_king(engine_color), user_color);
+        is_mat = (is_chk && !has_legal_moves(engine_color));
         format_san(from, to, moving_piece, captured_piece, is_chk, is_mat, san_str);
         
         if (moving_piece == 6) { w_king_moved = 1; }
@@ -928,37 +973,10 @@ void get_user_move(void) {
         
         if (is_mat) {
             strcpy(engine_last_move, "Mate");
-        } else if (!has_legal_moves(-1)) {
+        } else if (!has_legal_moves(engine_color)) {
             strcpy(engine_last_move, "Draw");
         } else {
-            goto_xy(4, 23); printf("ENG   ");
-            clear_row(8);
-            goto_xy(8, 1);
-            printf("Engine thinking...    ");
-
-            prev_ep = en_passant_sq;
-            find_best_move(-1, &b_from, &b_to);
-            
-            moving_piece = board[b_from];
-            captured_piece = board[b_to];
-            
-            make_move_full(b_from, b_to, &captured_piece, &en_passant_sq, &promoted);
-            
-            is_chk = is_square_attacked(find_king(1), -1);
-            is_mat = (is_chk && !has_legal_moves(1));
-            format_san(b_from, b_to, moving_piece, captured_piece, is_chk, is_mat, san_str);
-            strcpy(engine_last_move, san_str);
-
-            if (moving_piece == -6) { b_king_moved = 1; }
-            if (b_from == 91) { b_rook_a_moved = 1; }
-            if (b_from == 98) { b_rook_h_moved = 1; }
-
-            if (history_count < 50) {
-                history_from[history_count] = b_from;
-                history_to[history_count] = b_to;
-                strcpy(move_history[history_count++], san_str);
-                if (history_count > 7) scroll_offset = history_count - 7;
-            }
+            trigger_engine_move();
         }
     } else {
         goto_xy(8, 1);
@@ -971,8 +989,11 @@ void get_user_move(void) {
 int main(void) {
     int key;
     int needs_redraw = 1;
+    int current_turn;
     
     init_display();
+    
+    /* Reset Prompt */
     goto_xy(1, 1);
     printf("Reset Game? (y/n): ");
     while(1) {
@@ -988,7 +1009,30 @@ int main(void) {
             break;
         }
     }
+    
+    /* Choose Color Prompt */
     putchar(12);
+    goto_xy(1, 1);
+    printf("Play White/Black? (w/b): ");
+    while(1) {
+        key = getch();
+        if (key == 27) break;
+        key = tolower(key);
+        if (key == 'w') {
+            user_color = 1;
+            break;
+        } else if (key == 'b') {
+            user_color = -1;
+            break;
+        }
+    }
+    putchar(12);
+
+    /* If playing Black and no moves made yet, engine opens as White */
+    if (user_color == -1 && history_count == 0) {
+        render_dashboard();
+        trigger_engine_move();
+    }
 
     while (1) {
         if (needs_redraw) {
@@ -1021,8 +1065,11 @@ int main(void) {
             }
         }
         if (key == ' ') { 
-            get_user_move();
-            needs_redraw = 1; 
+            current_turn = (history_count % 2 == 0) ? 1 : -1;
+            if (current_turn == user_color) {
+                get_user_move();
+                needs_redraw = 1; 
+            }
         }
 
         /* Quit Key */
@@ -1030,9 +1077,8 @@ int main(void) {
             clear_row(8);
             goto_xy(8, 1);
             printf("Exiting engine...     ");
-            break; /* Breaks the while(1) loop, returning 0 at the end of main() */
+            break;
         }
-
     }
     return 0;
 }

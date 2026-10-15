@@ -19,6 +19,14 @@ G0100
 
 The PC-G850V chess engine operates via an interactive VT100 dashboard formatted for the 24x8 character LCD screen. Input handling is split between top-level dashboard hotkeys and standard algebraic move parsing.
 
+When launching the program or starting a new session, the engine presents two setup prompts on the LCD screen:
+
+1. **Reset Session (`Reset Game? (y/n)`):** Clears previous board history, node counters, and move logs.
+2. **Side Selection (`Play White/Black? (w/b)`):** 
+   * **`W` (White):** You control White and take the first move. The dashboard displays `Turn: YOU` and waits for you to press `SPACE`.
+   * **`B` (Black):** You control Black. The engine automatically initiates execution as White, calculates the opening move (using the 2 KB binary opening book), updates the board, and sets `Turn: YOU` for your response.
+
+
 ### 🎮 Dashboard Hotkeys
 
 When sitting at the main dashboard display, single keystrokes trigger interactive commands (polled via `getk()`):
