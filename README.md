@@ -80,19 +80,19 @@ If you want to feel the raw power of typing long commands, you can invoke the cr
 
 **Step A: Push your code to the server**
 ```bash
-scp your_code.c chrisherman@homedocker.local:~/z88dk/workspace/
+scp your_code.c <YOUR USERNAME>@<YOUR DOCKER HOST>:~/z88dk/workspace/
 ```
 
 **Step B: Invoke the compiler remotely**
 This tells Docker to execute `zcc` inside the running container. The `-create-app` flag is what forces z88dk to vomit out the `.ihx` and `.rom` files you actually need.
 ```bash
-ssh chrisherman@homedocker.local "docker exec -w /home/dev/workspace z88dk_g850v_env zcc +g800 -clib=g850 -O3 --opt-code-size -create-app -o your_code.bin your_code.c"
+ssh <YOUR USERNAME>@<YOUR DOCKER HOST> "docker exec -w /home/dev/workspace z88dk_g850v_env zcc +g800 -clib=g850 -O3 --opt-code-size -create-app -o your_code.bin your_code.c"
 ```
 
 **Step C: Retrieve the spoils**
 ```bash
-scp chrisherman@homedocker.local:~/z88dk/workspace/your_code.ihx .
-scp chrisherman@homedocker.local:~/z88dk/workspace/your_code.rom .
+scp <YOUR USERNAME>@<YOUR DOCKER HOST>:~/z88dk/workspace/your_code.ihx .
+scp <YOUR USERNAME>@<YOUR DOCKER HOST>:~/z88dk/workspace/your_code.rom .
 ```
 
 ---
