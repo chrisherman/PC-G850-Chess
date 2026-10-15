@@ -15,6 +15,55 @@ G0100
 ![Chess on the PC-G850](./images/screenshot01_a.png)
 
 
+## ⌨️ Keyboard & Input Reference
+
+The PC-G850V chess engine operates via an interactive VT100 dashboard formatted for the 24x8 character LCD screen. Input handling is split between top-level dashboard hotkeys and standard algebraic move parsing.
+
+### 🎮 Dashboard Hotkeys
+
+When sitting at the main dashboard display, single keystrokes trigger interactive commands (polled via `getk()`):
+
+| Key | Function | Action & Behavior |
+| :---: | :--- | :--- |
+| `SPACE` | **Prompt Move Input** | Clears line 8 and opens the `Move:` prompt for text entry. |
+| `W` | **Scroll History Up** | Scrolls the move history log upward (`scroll_offset--`). |
+| `S` | **Scroll History Down** | Scrolls the move history log downward (`scroll_offset++`). |
+| `U` | **Undo Full Turn** | Reverts the last **2 plies** (your move + CPU response) via `replay_to()`. |
+| `Q` | **Quit Engine** | Gracefully breaks the main execution loop and returns to the OS prompt. |
+
+---
+
+### ♟️ Move Input Modes (`SPACE` $\rightarrow$ `Move:` Prompt)
+
+Pressing `SPACE` opens the prompt on row 8. The engine processes both standard coordinate pairs and Standard Algebraic Notation (SAN) automatically via `get_user_move()`:
+
+| Input Format | Example | Description |
+| :--- | :--- | :--- |
+| **Coordinate** | `e2e4` | Enter starting file/rank followed by destination file/rank. |
+| **Standard SAN** | `Nf3`, `Bc4` | Enter piece letter (`N`, `B`, `R`, `Q`, `K`) and destination square. |
+| **Pawn Capture SAN** | `exd5`, `c5` | Enter file/capture notation for pawn moves. |
+| **Castling SAN** | `O-O` or `O-O-O` | Enter king-side or queen-side castling string. |
+| **Pawn Promotion** | `e7e8` | Pawn moves reaching rank 8/1 automatically promote to Queen (`Q`). |
+| `ESC` | *Abort Input* | Press Escape during entry to cancel and return to the dashboard. |
+
+---
+
+### 📊 LCD Dashboard Display Layout (24x8 Characters)
+
+```text
+[1-7] History  [11-18] Top Evaluated Moves  [23-30] Engine Status
+------------------------------------------------------------------
+001: e2e4      Top:                         N: 1420   (Nodes Searched)
+002: e7e5      e5  : 20                     D: 3      (Search Depth)
+003: Nf3       Nf3 : 15                     Turn: 
+004: Nc6       Bc4 : 10                     YOU / ENG (Active Turn)
+005: Bb5       d4  : 5                      Bk: 1     (Book Line #)
+006: a6        a3  : 0
+007: Ba4
+------------------------------------------------------------------
+Move: e2e4_    <-- Active input row when SPACE is pressed
+
+
 
 # PC-G850V Dev Environment: Over-Engineering a 40-Year-Old Calculator
 
