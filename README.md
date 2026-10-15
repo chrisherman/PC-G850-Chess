@@ -5,7 +5,7 @@ Welcome to your modern CI/CD pipeline for a Z80 pocket computer. Because why jus
 Here is exactly how to set up this architectural marvel, step by step.
 
 ## 1. Setting Up the Remote z88dk Docker
-You're running this on `homedocker`. The official `z88dk/z88dk` image is built on Alpine Linux (meaning `apt-get` is a myth here, use `apk`).
+I am running this on `homedocker` (that's my docker appliance, you will have to adjust this according to your own environment.). The official `z88dk/z88dk` image is built on Alpine Linux (meaning `apt-get` is a myth here, use `apk`).
 
 Create a directory for your environment on the host server:
 ```bash
